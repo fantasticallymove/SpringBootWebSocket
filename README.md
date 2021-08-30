@@ -14,7 +14,7 @@ A favorite text editor or IDE
 
 JDK 1.8 or later
 
-Gradle 4+ or Maven 3.2+
+Gradle 4+
 
 You can also import the code straight into your IDE:
 
