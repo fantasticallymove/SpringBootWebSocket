@@ -22,4 +22,3 @@ Spring Tool Suite (STS)
 
 IntelliJ IDEA
 
-How to complete t
