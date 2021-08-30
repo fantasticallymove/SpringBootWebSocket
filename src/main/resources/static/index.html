@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Hello WebSocket</title>
+    <link href="/webjars/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/main.css" rel="stylesheet">
+    <script src="/webjars/jquery/jquery.min.js"></script>
+    <script src="/webjars/sockjs-client/sockjs.min.js"></script>
+    <script src="/webjars/stomp-websocket/stomp.min.js"></script>
+    <script src="/app.js"></script>
+    <script>
+    var stompClient = null;
+    var GetName = false;
+    var name = null;
+    
+    $(document).ready(function()
+    {
+    	$("#form-talk").hide();
+    	$("#conversation").hide();
+    	$("#form-inline").hide();
+    });
+    
+    function setConnected(connected) {
+        $("#connect").prop("disabled", connected);
+        $("#disconnect").prop("disabled", !connected);
+        if (connected) {
+            $("#conversation").show();
+        }
+        else {
+            $("#conversation").hide();
+        }
+        $("#greetings").html("");
+    }
+	//ChatMessage is the class that you design in the backend
+	//JSON.parse(	{CLASSNAME}	.body).ATTRIBUTE can retrieve the param
+	//This ChatMessage class has three attributes including    (Enum)type, (String)name, (String)content
+    function connect() {
+        var socket = new SockJS('/gs-guide-websocket');
+        stompClient = Stomp.over(socket);
+        stompClient.connect({}, function (frame) {
+            setConnected(true);
+            console.log('Connected: ' + frame);
+            stompClient.subscribe('/topic/greetings', function (ChatMessage) {
+            	
+            	if(GetName==false)
+            		{
+            			showGreeting(JSON.parse(ChatMessage.body).name);
+            			name = JSON.parse(ChatMessage.body).name;
+            			GetName = true;
+            		}
+            	else
+            		{
+            			showGreeting('['+JSON.parse(ChatMessage.body).type+"]"+
+            							JSON.parse(ChatMessage.body).name +':'+ 
+            							JSON.parse(ChatMessage.body).content+
+            							" - "+
+            							new Date());
+            		}
+                   	
+            });
+        });
+    }
+
+    function disconnect() {
+        if (stompClient !== null) {
+            stompClient.disconnect();
+        }
+        setConnected(false);
+        console.log("Disconnected");
+    }
+
+    function sendName() {
+        stompClient.send("/app/hello", {priority: 9}, JSON.stringify({'name': $("#name").val()}));
+    }
+    
+    function sendContent(){
+    	stompClient.send("/app/hello",{priority: 9},JSON.stringify({	
+    													'type': 'Chat',
+    													'name': name,
+    													'content': $("#content").val()    														
+    													}));
+    }
+
+    function showGreeting(message) {
+        $("#greetings").append("<tr><td>"+ message + "</td></tr>");
+    }
+
+    $(function () {
+        $("form").on('submit', function (e) {
+            e.preventDefault();
+        });
+        $( "#connect" ).click(function() { 
+        					connect();
+        					$("#form-inline").show();
+        					});
+        $( "#disconnect" ).click(function() { 
+        					disconnect(); 
+        					$("#form-talk").hide();
+        					$("#form-inline").hide();
+        					GetName = false;
+        					name = null;
+        					});
+        $( "#send" ).click(function(){ 
+	        				sendName();
+							$("#form-inline").hide(); 
+							$("#form-talk").show();
+	        				});
+        $( "#contentSend").click(function(){ 
+        					sendContent();
+        					});
+    });
+    </script>
+</head>
+<body>
+<header>
+	<h1>WebSocket ´ú¸Õ¥­¥x</h1>
+</header>
+<br>
+        <section class="col-md-6">
+            <form class="form-inline">
+                <div class="form-group">
+                    <label for="connect">WebSocket connection:</label>
+                    <button id="connect" class="btn btn-default" type="submit">Connect</button>
+                    <button id="disconnect" class="btn btn-default" type="submit" disabled="disabled">Disconnect
+                    </button>
+                </div>
+            </form>
+        </section>
+        <section class="col-md-6">
+            <form id="form-inline">
+                <div class="form-group">
+                    <label for="name">What is your name?</label>
+                    <input type="text" id="name" class="form-control" placeholder="Your name here...">
+                </div>
+                <button id="send" class="btn btn-default" type="submit">Send</button>
+            </form>
+        </section>
+        <section>
+        	<form id="form-talk">
+        		<div>
+        			<label for="content">What is type on your mind?</label>
+        			<input type="text" id="content" placeholder="write something">
+        			<button id="contentSend" type="submit">sendOut</button>
+        		</div>
+        	</form>
+        </section>
+      
+    <div class="row">
+        <div class="col-md-12">
+            <table id="conversation" class="table table-striped">
+                <thead>
+                <tr>
+                    <th>Greetings</th>
+                </tr>
+                </thead>
+                <tbody id="greetings">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</body>
+</html>
